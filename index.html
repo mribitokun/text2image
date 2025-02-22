@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obama Naija Text-to-Image Generator</title>
+    <style>
+        /* Combined CSS from both pages */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        /* Add all previous CSS styles here */
+        /* ... [Include all CSS from previous index.html and result.html] ... */
+        
+        /* Add mobile-friendly styles */
+        textarea {
+            width: 95%;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+        }
+        
+        .mobile-warning {
+            display: none;
+            color: #ff4444;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Generator Screen -->
+        <div id="generatorScreen">
+            <h1>Obama Naija Text-to-Image</h1>
+            <textarea id="promptInput" placeholder="Describe the image you want to generate..."></textarea>
+            <button onclick="generateImage()">Generate Image</button>
+            <div class="loading" id="loading">Generating...</div>
+            <div class="mobile-warning" id="mobileWarning"></div>
+        </div>
+
+        <!-- Result Screen (initially hidden) -->
+        <div id="resultScreen" style="display: none;">
+            <h1>Your Generated Image</h1>
+            <div class="image-container">
+                <img id="generatedImage" class="generated-image" alt="Generated image">
+            </div>
+            <div class="button-group">
+                <button class="download-btn" onclick="downloadImage()">Download Image</button>
+                <button class="download-btn" onclick="showGenerator()">Generate Another</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile detection and warning
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const mobileWarning = document.getElementById('mobileWarning');
+        
+        if(isMobile) {
+            mobileWarning.style.display = 'block';
+            mobileWarning.innerHTML = 'Note: Large images may take longer to load on mobile connections';
+        }
+
+        let generatedImageUrl = null;
+
+        async function generateImage() {
+            const prompt = document.getElementById('promptInput').value;
+            const loading = document.getElementById('loading');
+            
+            if (!prompt) {
+                alert('Please enter a description');
+                return;
+            }
+
+            try {
+                loading.style.display = 'block';
+                
+                const response = await fetch(
+                    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer $(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)"
+                        },
+                        body: JSON.stringify({ 
+                            inputs: prompt,
+                            parameters: {
+                                width: 512,
+                                height: 512
+                            }
+                        }),
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate image: ' + (await response.text()));
+                }
+
+                const blob = await response.blob();
+                generatedImageUrl = URL.createObjectURL(blob);
+                
+                // Show result screen
+                document.getElementById('generatorScreen').style.display = 'none';
+                document.getElementById('resultScreen').style.display = 'block';
+                document.getElementById('generatedImage').src = generatedImageUrl;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function showGenerator() {
+            document.getElementById('generatorScreen').style.display = 'block';
+            document.getElementById('resultScreen').style.display = 'none';
+            document.getElementById('promptInput').value = '';
+            if(generatedImageUrl) URL.revokeObjectURL(generatedImageUrl);
+        }
+
+        async function downloadImage() {
+            try {
+                const response = await fetch(generatedImageUrl);
+                const blob = await response.blob();
+                
+                // Mobile-friendly download
+                if(isMobile) {
+                    const a = document.createElement('a');
+                    a.href = generatedImageUrl;
+                    a.download = 'obama-naija-image.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } else {
+                    const link = document.createElement('a');
+                    link.href = generatedImageUrl;
+                    link.download = 'obama-naija-image.png';
+                    link.click();
+                }
+            } catch (error) {
+                alert('Download error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
